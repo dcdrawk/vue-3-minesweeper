@@ -6,10 +6,14 @@
     "build": "vite build"
   },
   "dependencies": {
+    "postcss-import": "^12.0.1",
+    "tailwindcss": "^1.8.4",
     "vue": "^3.0.0-rc.1"
   },
   "devDependencies": {
-    "vite": "^1.0.0-rc.1",
-    "@vue/compiler-sfc": "^3.0.0-rc.1"
+    "@vue/compiler-sfc": "^3.0.0-rc.1",
+    "autoprefixer": "^9.8.6",
+    "postcss-nested": "^4.2.3",
+    "vite": "^1.0.0-rc.1"
   }
 }
