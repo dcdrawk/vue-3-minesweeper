@@ -1,7 +1,11 @@
 <template>
   <div class="app-shell">
     <div class="container mx-auto">
-      <img alt="Vue logo" src="./assets/logo.png" class="mx-auto d-block"/>
+      <img
+        alt="Vue logo"
+        src="./assets/logo.png"
+        class="mx-auto d-block"
+      >
       <HelloWorld msg="Hello Vue 3.0 + Vite + Tailwind" />
     </div>
   </div>

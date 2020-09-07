@@ -6,14 +6,20 @@
     "build": "vite build"
   },
   "dependencies": {
-    "postcss-import": "^12.0.1",
     "tailwindcss": "^1.8.4",
     "vue": "^3.0.0-rc.1"
   },
   "devDependencies": {
     "@vue/compiler-sfc": "^3.0.0-rc.1",
+    "@vue/eslint-config-standard": "^5.1.2",
     "autoprefixer": "^9.8.6",
+    "eslint": "^7.8.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "eslint-plugin-vue": "^7.0.0-beta.3",
+    "postcss-import": "^12.0.1",
     "postcss-nested": "^4.2.3",
-    "vite": "^1.0.0-rc.1"
+    "standard": "^14.3.4",
+    "vite": "^1.0.0-rc.1",
+    "vue-eslint-parser": "^7.1.0"
   }
 }

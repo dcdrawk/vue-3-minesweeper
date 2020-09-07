@@ -1,0 +1,10 @@
+{
+  "parser": "vue-eslint-parser",
+  "extends": [
+    "eslint:recommended",
+    "plugin:vue/vue3-recommended",
+    "@vue/standard"
+  ],
+  "rules": {
+  }
+}
