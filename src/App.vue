@@ -1,6 +1,10 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png" />
-  <HelloWorld msg="Hello Vue 3.0 + Vite" />
+  <div class="app-shell">
+    <div class="container mx-auto">
+      <img alt="Vue logo" src="./assets/logo.png" class="mx-auto d-block"/>
+      <HelloWorld msg="Hello Vue 3.0 + Vite + Tailwind" />
+    </div>
+  </div>
 </template>
 
 <script>
@@ -13,3 +17,11 @@ export default {
   }
 }
 </script>
+
+<style>
+.app-shell {
+  @apply bg-gray-300;
+  @apply min-h-screen;
+  @apply pt-32;
+}
+</style>
