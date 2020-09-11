@@ -1,10 +1,12 @@
 <template>
   <AppButton
     class="block my-5 mx-auto text-center"
-    @click="generateMineField"
+    @click="resetMineField"
   >
-    Generate
+    Reset
   </AppButton>
+
+  Game Initiated: {{ gameInitiated }} <br>
 
   <!-- {{ mineField }} -->
   <div class="mine-field">
@@ -61,33 +63,20 @@ export default {
   },
 
   setup (props) {
-    const mineField = ref(
-      Array(props.width * props.height)
+    const mineField = ref([])
+    const gameInitiated = ref(false)
+    const revealed = true
+
+    function resetMineField () {
+      mineField.value = Array(props.width * props.height)
         .fill()
         .map(item => {
           return {}
         })
-    )
-    const gameInitiated = ref(false)
-    const revealed = true
-
-    function handleTileClick (tile) {
-      if (!gameInitiated.value) {
-        generateMineField()
-        tile.revealed = true
-        gameInitiated.value = true
-      } else {
-        if (tile.flag) return
-
-        tile.revealed = true
-      }
+      gameInitiated.value = false
     }
 
-    function handleTileRightClick (tile) {
-      tile.flag = !tile.flag
-    }
-
-    function generateMineField () {
+    function generateMineField (safeIndex = 0) {
       const defaultSquare = {
         adjacentMines: 0,
         mine: false,
@@ -99,14 +88,19 @@ export default {
         flag: false
       }
 
-      let field = Array(props.width * props.height)
+      let field = Array((props.width * props.height) - 1)
         .fill()
         .map((item, index) => {
           return index < props.mines ? { ...mineSquare } : { ...defaultSquare }
         })
       field = shuffleArray(field)
+      field.splice(safeIndex, 0, {
+        ...defaultSquare
+        // revealed: true
+      })
       calculateAdjacentMines(field, props.width, props.height)
       mineField.value = field
+      revealTile(mineField.value[safeIndex], safeIndex)
     }
 
     function calculateAdjacentMines (field = [], width = 9, height = 9) {
@@ -158,12 +152,128 @@ export default {
       return field
     }
 
+    function getAdjacentTiles (index) {
+      const prevRowIndex = index - props.width
+      const nextRowIndex = index + props.width
+      const field = mineField.value
+
+      const isRightEdgeTile = (index + 1) % props.width === 0
+      const isLeftEdgeTile = (index) % props.width === 0
+      const isTopEdgeTile = (index + 1) <= props.width
+      const isBottomEdgeTile = index >= props.width * (props.height - 1)
+
+      const leftTile = index - 1
+      const rightTile = index + 1
+      const topLeftTile = prevRowIndex - 1
+      const topRightTile = prevRowIndex + 1
+      const bottomLeftTile = nextRowIndex - 1
+      const bottomRightTile = nextRowIndex + 1
+      // debugger
+
+      const adjacentTiles = [
+        // Left:
+        {
+          condition: !isLeftEdgeTile,
+          tile: field[leftTile],
+          index: leftTile
+        },
+        // Right:
+        {
+          condition: !isRightEdgeTile,
+          tile: field[rightTile],
+          index: rightTile
+        },
+        // Top-Left:
+        {
+          condition: !isTopEdgeTile && !isLeftEdgeTile,
+          tile: field[topLeftTile],
+          index: topLeftTile
+        },
+        // Top-Center
+        {
+          condition: !isTopEdgeTile,
+          tile: field[prevRowIndex],
+          index: prevRowIndex
+        },
+        // Top-Right
+        {
+          condition: !isTopEdgeTile && !isRightEdgeTile,
+          tile: field[topRightTile],
+          index: topRightTile
+        },
+        // Bottom-Left:
+        {
+          condition: !isBottomEdgeTile && !isLeftEdgeTile,
+          tile: field[bottomLeftTile],
+          index: bottomLeftTile
+        },
+        // Bottom-Center
+        {
+          condition: !isBottomEdgeTile,
+          tile: field[nextRowIndex],
+          index: nextRowIndex
+        },
+        // Bottom-Right
+        {
+          condition: !isBottomEdgeTile && !isRightEdgeTile,
+          tile: field[bottomRightTile],
+          index: bottomRightTile
+        }
+      ]
+
+      return adjacentTiles.filter((item) => item.condition)
+    }
+
+    function revealTile (tile, index) {
+      tile.revealed = true
+      if (tile.adjacentMines === 0) {
+        revealAdjacentMines(index)
+      }
+    }
+
+    function revealAdjacentMines (index, recursiveTiles = []) {
+      if (recursiveTiles.length) recursiveTiles.shift()
+
+      const adjacentHiddenTiles = getAdjacentTiles(index)
+        .filter((item) => !item.tile?.revealed)
+
+      adjacentHiddenTiles.forEach(item => {
+        if (!item.tile?.revealed && item.tile.adjacentMines === 0) {
+          recursiveTiles.push(item)
+        }
+        item.tile.revealed = true
+      })
+
+      recursiveTiles.forEach((item) => {
+        revealAdjacentMines(item.index, recursiveTiles)
+      })
+    }
+
+    function handleTileClick (tile, index) {
+      if (!gameInitiated.value) {
+        gameInitiated.value = true
+        generateMineField(index)
+        tile.revealed = true
+      } else {
+        if (tile.flag || tile.revealed) return
+        revealTile(tile, index)
+      }
+    }
+
+    function handleTileRightClick (tile) {
+      tile.flag = !tile.flag
+    }
+
+    resetMineField()
+
     return {
+      gameInitiated,
       revealed,
       mineField,
-      handleTileRightClick,
+      resetMineField,
       generateMineField,
-      handleTileClick
+      handleTileClick,
+      handleTileRightClick
     }
   }
 }
@@ -175,6 +285,7 @@ export default {
   margin: auto;
   @apply border;
   @apply border-gray-600;
+  border-width: 1px 0 0 1px;
 
   &__grid {
     flex-wrap: wrap;
