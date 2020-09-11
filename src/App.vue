@@ -1,11 +1,11 @@
 <template>
   <div class="app-shell">
     <div class="container mx-auto">
-      <img
+      <!-- <img
         alt="Vue logo"
         src="./assets/logo.png"
         class="mx-auto d-block"
-      >
+      > -->
       <MineField />
     </div>
   </div>

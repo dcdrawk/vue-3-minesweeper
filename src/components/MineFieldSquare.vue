@@ -1,15 +1,21 @@
 <template>
   <div
-    class="mine-field-square"
+    class="mine-field-tile"
     :class="[baseStyles, computedStyles]"
+    @click="$emit('click')"
+    @contextmenu.prevent="$emit('right-click')"
   >
     <i
-      v-if="mine"
+      v-if="flag"
+      class="far fa-flag text-xl text-red"
+    />
+    <i
+      v-else-if="mine"
       class="fas fa-bomb text-xl"
     />
 
     <div
-      v-else-if="adjacentMines > 0"
+      v-else-if="adjacentMines > 0 && revealed"
       class="text-lg"
     >
       {{ adjacentMines }}
@@ -40,6 +46,10 @@ export default {
       type: Boolean,
       default: false
     },
+    flag: {
+      type: Boolean,
+      default: false
+    },
     revealed: {
       type: Boolean,
       default: false
@@ -50,59 +60,30 @@ export default {
     }
   },
 
+  emits: ['click', 'right-click'],
+
   setup (props) {
     return {
       baseStyles,
       computedStyles: ref({
-        [`adj-${props.adjacentMines}`]: props.adjacentMines
+        [`adj-${props.adjacentMines}`]: props.revealed && props.adjacentMines > 0,
+        revealed: props.revealed,
+        flag: props.flag
       })
     }
   }
-
-  // Components
-  // components: {},
-
-  // // Mixins
-  // mixins: [],
-
-  // // Props
-  // props: {},
-
-  // // Data
-  // data () {
-  //   return {}
-  // },
-
-  // // Computed
-  // computed: {
-  //   computedProperty () {
-  //     return 'something'
-  //   }
-  // },
-
-  // // Watch
-  // watch: {
-  //   watchProperty (newValue, oldValue) {
-  //     return newValue
-  //   }
-  // },
-
-  // // Methods
-  // methods: {
-  //   myFunction () {
-  //     return 'something'
-  //   }
-  // }
 }
 </script>
 
 <style scoped>
-.mine-field-square {
+.mine-field-tile {
   border-top-color: theme('colors.white');
   border-left-color: theme('colors.white');
   border-right-color: theme('colors.gray.600');
   border-bottom-color: theme('colors.gray.600');
-  /* margin: 40px; */
+  backface-visibility: hidden;
+  overflow: visible;
+  @apply cursor-pointer;
 
   &.adj {
     &-1 {
@@ -129,6 +110,15 @@ export default {
     &-8 {
       color: theme('colors.gray.600')
     }
+  }
+
+  &.revealed {
+    /* display: block; */
+    border-width: 0px;
+    border-width: 0px 1px 1px 0px;
+    border-color: theme('colors.gray.600');
+    @apply cursor-auto;
+    /* box-shadow: inset 0px 0px 0px 1px theme('colors.gray.600'); */
   }
 }
 </style>
