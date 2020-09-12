@@ -110,7 +110,6 @@ export default {
       field = shuffleArray(field)
       field.splice(safeIndex, 0, {
         ...defaultSquare
-        // revealed: true
       })
       calculateAdjacentMines(field, props.width, props.height)
       mineField.value = field
@@ -144,7 +143,6 @@ export default {
       const topRightTile = prevRowIndex + 1
       const bottomLeftTile = nextRowIndex - 1
       const bottomRightTile = nextRowIndex + 1
-      // debugger
 
       const adjacentTiles = [
         // Left:
@@ -197,10 +195,12 @@ export default {
         }
       ]
 
-      return adjacentTiles.filter((item) => item.condition).map((item) => {
-        item.tile.index = item.index
-        return item.tile
-      })
+      return adjacentTiles
+        .filter((item) => item.condition)
+        .map((item) => {
+          item.tile.index = item.index
+          return item.tile
+        })
     }
 
     function revealTile (tile, index) {
@@ -244,11 +244,13 @@ export default {
     }
 
     function handleTileRightClick (tile) {
+      if (tile.revealed || gameOver.value || gameVictory.value) return
+
       tile.flag = !tile.flag
     }
 
     function handleTileMiddleClick (tile, index) {
-      if (!tile.revealed) return
+      if (!tile.revealed || gameOver.value || gameVictory.value) return
 
       const adjacentTiles = getAdjacentTiles(index)
       const adjacentFlags = adjacentTiles.filter((tile) => tile.flag).length

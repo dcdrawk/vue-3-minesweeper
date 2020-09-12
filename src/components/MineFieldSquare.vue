@@ -3,6 +3,7 @@
     class="mine-field-tile"
     :class="[baseStyles, computedStyles]"
     :revealed="revealed || (mine && gameOver)"
+    :button-styles="{ 'bg-red': exploded }"
     @click="$emit('click')"
     @click.middle="$emit('middle-click')"
     @contextmenu.prevent="$emit('right-click')"

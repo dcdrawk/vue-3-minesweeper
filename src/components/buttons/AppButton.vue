@@ -5,7 +5,7 @@
   >
     <div
       class="app-button__inner h-full w-full"
-      :class="[innerStyles, innerStylesComputed]"
+      :class="[innerStyles, innerStylesComputed, buttonStyles]"
     >
       <slot />
     </div>
@@ -15,18 +15,8 @@
 <script>
 import { ref } from 'vue'
 
-// const baseStyles = [
-//   'border border-gray-600',
-//   'focus:outline-none',
-//   'focus:shadow-outline'
-// ]
-
 const baseStyles = [
-  // 'border-4',
-  // 'border-top-gray-500',
   'focus:outline-none',
-  // 'focus:shadow-outline',
-  // 'border border-gray-500',
   'bg-gray-500',
   'flex',
   'justify-center',
@@ -51,6 +41,10 @@ export default {
     revealed: {
       type: Boolean,
       default: false
+    },
+    buttonStyles: {
+      type: Object,
+      default: () => {}
     }
   },
 
