@@ -1,14 +1,20 @@
 <template>
+  <!-- Smiley Reset Button -->
   <AppButton
-    class="block my-5 mx-auto text-center"
+    class="block my-5 mx-auto text-center h-12 w-12"
     @click="resetMineField"
   >
-    Reset
+    <i
+      class="reset__icon text-yellow rounded-full"
+      :class="resetIconStyles"
+    />
   </AppButton>
 
-  Game Initiated: {{ gameInitiated }} <br>
+  Game Initiated: {{ gameInitiated }}<br>
+  Game Over: {{ gameOver }}<br>
+  Victory: {{ gameVictory }}<br>
+  {{ resetIconStyles }}
 
-  <!-- {{ mineField }} -->
   <div class="mine-field">
     <div class="mine-field__grid flex">
       <MineFieldSquare
@@ -17,17 +23,20 @@
         class="mine-field__tile"
         :flag="tile.flag"
         :mine="tile.mine"
+        :game-over="gameOver"
+        :exploded="tile.exploded"
         :revealed="tile.revealed"
         :adjacent-mines="tile.adjacentMines"
         @click="handleTileClick(tile, index)"
         @right-click="handleTileRightClick(tile, index)"
+        @middle-click="handleTileMiddleClick(tile, index)"
       />
     </div>
   </div>
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import AppButton from './buttons/AppButton.vue'
 import MineFieldSquare from './MineFieldSquare.vue'
 
@@ -65,9 +74,14 @@ export default {
   setup (props) {
     const mineField = ref([])
     const gameInitiated = ref(false)
+    const gameOver = ref(false)
+    const gameVictory = computed(
+      () => mineField.value.filter((tile) => !tile.revealed).length === props.mines
+    )
     const revealed = true
 
     function resetMineField () {
+      gameOver.value = false
       mineField.value = Array(props.width * props.height)
         .fill()
         .map(item => {
@@ -107,55 +121,17 @@ export default {
       field.forEach((tile, index) => {
         if (tile.mine) return
 
-        const isRightEdgeTile = (index + 1) % width === 0
-        const isLeftEdgeTile = (index) % width === 0
-        const isTopEdgeTile = (index + 1) < width
-        const isBottomEdgeTile = index > width * (height - 1)
-
-        // Right Tile Check
-        if (!isRightEdgeTile) {
-          if (field[index + 1]?.mine) tile.adjacentMines++
-        }
-
-        // Left Tile Check
-        if (!isLeftEdgeTile) {
-          if (field[index - 1]?.mine) tile.adjacentMines++
-        }
-
-        // Top Tile Check
-        if (!isTopEdgeTile) { // If we're not on the top row...
-          const prevRowIndex = index - width
-          // Top-Left:
-          if (!isLeftEdgeTile && field[prevRowIndex - 1]?.mine) tile.adjacentMines++
-
-          // Top-Center:
-          if (field[prevRowIndex]?.mine) tile.adjacentMines++
-
-          // Top-Right:
-          if (!isRightEdgeTile && field[prevRowIndex + 1]?.mine) tile.adjacentMines++
-        }
-
-        // Bottom Tile Check
-        if (!isBottomEdgeTile) { // If we're not on the bottom row...
-          const nextRowIndex = index + width
-          // Bottom-Left:
-          if (!isLeftEdgeTile && field[nextRowIndex - 1]?.mine) tile.adjacentMines++
-
-          // Bottom-Center:
-          if (field[nextRowIndex]?.mine) tile.adjacentMines++
-
-          // Bottom-Right:
-          if (!isRightEdgeTile && field[nextRowIndex + 1]?.mine) tile.adjacentMines++
-        }
+        const adjacentMines = getAdjacentTiles(index, field)
+          .filter((tile) => tile?.mine).length
+        tile.adjacentMines = adjacentMines
       })
 
       return field
     }
 
-    function getAdjacentTiles (index) {
+    function getAdjacentTiles (index, field = mineField.value) {
       const prevRowIndex = index - props.width
       const nextRowIndex = index + props.width
-      const field = mineField.value
 
       const isRightEdgeTile = (index + 1) % props.width === 0
       const isLeftEdgeTile = (index) % props.width === 0
@@ -221,12 +197,19 @@ export default {
         }
       ]
 
-      return adjacentTiles.filter((item) => item.condition)
+      return adjacentTiles.filter((item) => item.condition).map((item) => {
+        item.tile.index = item.index
+        return item.tile
+      })
     }
 
     function revealTile (tile, index) {
+      if (gameOver.value || gameVictory.value) return
       tile.revealed = true
-      if (tile.adjacentMines === 0) {
+      if (tile.mine) {
+        gameOver.value = true
+        tile.exploded = true
+      } else if (tile.adjacentMines === 0) {
         revealAdjacentMines(index)
       }
     }
@@ -235,13 +218,13 @@ export default {
       if (recursiveTiles.length) recursiveTiles.shift()
 
       const adjacentHiddenTiles = getAdjacentTiles(index)
-        .filter((item) => !item.tile?.revealed)
+        .filter((tile) => !tile?.revealed)
 
-      adjacentHiddenTiles.forEach(item => {
-        if (!item.tile?.revealed && item.tile.adjacentMines === 0) {
-          recursiveTiles.push(item)
+      adjacentHiddenTiles.forEach(tile => {
+        if (!tile?.revealed && tile?.adjacentMines === 0) {
+          recursiveTiles.push(tile)
         }
-        item.tile.revealed = true
+        tile.revealed = true
       })
 
       recursiveTiles.forEach((item) => {
@@ -264,16 +247,40 @@ export default {
       tile.flag = !tile.flag
     }
 
+    function handleTileMiddleClick (tile, index) {
+      if (!tile.revealed) return
+
+      const adjacentTiles = getAdjacentTiles(index)
+      const adjacentFlags = adjacentTiles.filter((tile) => tile.flag).length
+
+      if (tile.adjacentMines !== adjacentFlags) return
+
+      const adjacentUnrevealedTiles = adjacentTiles.filter((tile) => !tile.revealed && !tile.flag)
+      adjacentUnrevealedTiles.forEach((tile) => {
+        revealTile(tile, tile.index)
+      })
+    }
+
     resetMineField()
 
     return {
       gameInitiated,
+      gameOver,
+      gameVictory,
       revealed,
       mineField,
       resetMineField,
       generateMineField,
       handleTileClick,
-      handleTileRightClick
+      handleTileRightClick,
+      handleTileMiddleClick,
+      resetIconStyles: computed(() => {
+        return {
+          'fas fa-smile': !gameOver.value && !gameVictory.value,
+          'fas fa-dizzy': gameOver.value && !gameVictory.value,
+          'fas fa-grin-stars': gameVictory.value
+        }
+      })
     }
   }
 }
@@ -296,5 +303,10 @@ export default {
     flex-grow: 0;
     flex-shrink: 0;
   }
+}
+
+.reset__icon {
+  font-size: 32px;
+  backface-visibility: hidden;
 }
 </style>

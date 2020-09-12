@@ -1,16 +1,18 @@
 <template>
-  <div
+  <AppButton
     class="mine-field-tile"
     :class="[baseStyles, computedStyles]"
+    :revealed="revealed || (mine && gameOver)"
     @click="$emit('click')"
+    @click.middle="$emit('middle-click')"
     @contextmenu.prevent="$emit('right-click')"
   >
     <i
       v-if="flag"
-      class="far fa-flag text-xl text-red"
+      class="fas fa-flag text-xl text-red"
     />
     <i
-      v-else-if="mine"
+      v-else-if="mine && revealed || mine && gameOver"
       class="fas fa-bomb text-xl"
     />
 
@@ -20,26 +22,25 @@
     >
       {{ adjacentMines }}
     </div>
-  </div>
+  </AppButton>
 </template>
 
 <script>
+import AppButton from './buttons/AppButton.vue'
 import { ref } from 'vue'
 
 const baseStyles = [
   'w-10',
-  'h-10',
-  'border-4',
-  'border-top-gray-300',
-  'border-gray-500',
-  'bg-gray-500',
-  'flex',
-  'justify-center',
-  'items-center'
+  'h-10'
 ]
+
 export default {
   // Name
   name: 'MineFieldSquare',
+
+  components: {
+    AppButton
+  },
 
   props: {
     mine: {
@@ -57,17 +58,26 @@ export default {
     adjacentMines: {
       type: Number,
       default: 0
+    },
+    gameOver: {
+      type: Boolean,
+      default: false
+    },
+    exploded: {
+      type: Boolean,
+      default: false
     }
   },
 
-  emits: ['click', 'right-click'],
+  emits: ['click', 'right-click', 'middle-click'],
 
   setup (props) {
     return {
       baseStyles,
       computedStyles: ref({
-        [`adj-${props.adjacentMines}`]: props.revealed && props.adjacentMines > 0,
-        revealed: props.revealed,
+        [`adj-${props.adjacentMines}`]: (props.revealed || props.gameOver) && props.adjacentMines > 0,
+        'bg-red': props.exploded,
+        revealed: (props.revealed || props.gameOver) && !props.flag,
         flag: props.flag
       })
     }
@@ -77,14 +87,6 @@ export default {
 
 <style scoped>
 .mine-field-tile {
-  border-top-color: theme('colors.white');
-  border-left-color: theme('colors.white');
-  border-right-color: theme('colors.gray.600');
-  border-bottom-color: theme('colors.gray.600');
-  backface-visibility: hidden;
-  overflow: visible;
-  @apply cursor-pointer;
-
   &.adj {
     &-1 {
       color: theme('colors.blue')
@@ -110,15 +112,6 @@ export default {
     &-8 {
       color: theme('colors.gray.600')
     }
-  }
-
-  &.revealed {
-    /* display: block; */
-    border-width: 0px;
-    border-width: 0px 1px 1px 0px;
-    border-color: theme('colors.gray.600');
-    @apply cursor-auto;
-    /* box-shadow: inset 0px 0px 0px 1px theme('colors.gray.600'); */
   }
 }
 </style>
