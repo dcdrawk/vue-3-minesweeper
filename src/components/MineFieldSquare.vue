@@ -2,14 +2,14 @@
   <AppButton
     class="mine-field-tile"
     :class="[baseStyles, computedStyles]"
-    :revealed="revealed || (mine && gameOver)"
+    :revealed="revealed || (mine && gameOver && !flag)"
     :button-styles="{ 'bg-red': exploded }"
     @click="$emit('click')"
     @click.middle="$emit('middle-click')"
     @contextmenu.prevent="$emit('right-click')"
   >
     <i
-      v-if="flag"
+      v-if="flag || (victory && mine)"
       class="fas fa-flag text-xl text-red"
     />
     <i
@@ -61,6 +61,10 @@ export default {
       default: 0
     },
     gameOver: {
+      type: Boolean,
+      default: false
+    },
+    victory: {
       type: Boolean,
       default: false
     },

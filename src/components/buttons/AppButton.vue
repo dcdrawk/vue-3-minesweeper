@@ -56,7 +56,7 @@ export default {
       }),
       innerStyles,
       innerStylesComputed: ref({
-        'app-button-inner__revealed border-r border-b border-gray-600': props.revealed,
+        'app-button__inner--revealed border-r border-b border-gray-600': props.revealed,
         'border-4': !props.revealed
       })
     }
@@ -72,16 +72,14 @@ export default {
     border-right-color: theme('colors.gray.600');
     border-bottom-color: theme('colors.gray.600');
 
-    &--revealed,
-    &--revealed:active {
-      border-width: 0px 1px 1px 0px !important;
-      border-color: theme('colors.gray.600');
-      @apply cursor-auto;
-    }
-
     &:active {
       border-color: theme('colors.gray.600');
       border-width: 2px 1px 1px 2px;
+    }
+
+    &--revealed {
+      border-width: 0 1px 1px 0 !important;
+      /* color: orange !important; */
     }
   }
 

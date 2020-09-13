@@ -10,10 +10,11 @@
     />
   </AppButton>
 
-  Game Initiated: {{ gameInitiated }}<br>
-  Game Over: {{ gameOver }}<br>
-  Victory: {{ gameVictory }}<br>
-  {{ resetIconStyles }}
+  <div class="text-center">
+    Game Initiated: {{ gameInitiated }}<br>
+    Game Over: {{ gameOver }}<br>
+    Victory: {{ gameVictory }}<br>
+  </div>
 
   <div class="mine-field">
     <div class="mine-field__grid flex">
@@ -24,6 +25,7 @@
         :flag="tile.flag"
         :mine="tile.mine"
         :game-over="gameOver"
+        :victory="gameVictory"
         :exploded="tile.exploded"
         :revealed="tile.revealed"
         :adjacent-mines="tile.adjacentMines"
