@@ -1,23 +1,18 @@
 <template>
   <div class="app-shell">
     <div class="container mx-auto">
-      <!-- <img
-        alt="Vue logo"
-        src="./assets/logo.png"
-        class="mx-auto d-block"
-      > -->
-      <MineField />
+      <Minefield />
     </div>
   </div>
 </template>
 
 <script>
-import MineField from './components/MineField.vue'
+import Minefield from './components/Minefield.vue'
 
 export default {
   name: 'App',
   components: {
-    MineField
+    Minefield
   }
 }
 </script>

@@ -1,14 +1,9 @@
 <template>
   <button
     class="app-button"
-    :class="[baseStyles, baseStylesComputed]"
+    :class="[baseStyles, baseStylesComputed, buttonStyles]"
   >
-    <div
-      class="app-button__inner h-full w-full"
-      :class="[innerStyles, innerStylesComputed, buttonStyles]"
-    >
-      <slot />
-    </div>
+    <slot />
   </button>
 </template>
 
@@ -20,12 +15,7 @@ const baseStyles = [
   'bg-gray-500',
   'flex',
   'justify-center',
-  'items-center'
-]
-
-const innerStyles = [
-  'text-xl',
-  // 'border-2',
+  'items-center',
   'border-gray-500',
   'bg-gray-500',
   'flex',
@@ -45,6 +35,18 @@ export default {
     buttonStyles: {
       type: Object,
       default: () => {}
+    },
+    raised: {
+      type: Boolean,
+      default: false
+    },
+    flat: {
+      type: Boolean,
+      default: false
+    },
+    depressed: {
+      type: Boolean,
+      default: false
     }
   },
 
@@ -52,12 +54,9 @@ export default {
     return {
       baseStyles,
       baseStylesComputed: ref({
-        // 'pointer-events-none': props.revealed
-      }),
-      innerStyles,
-      innerStylesComputed: ref({
-        'app-button__inner--revealed border-r border-b border-gray-600': props.revealed,
-        'border-4': !props.revealed
+        'app-button--depressed': props.depressed && !props.flat,
+        'app-button--flat border-r border-b border-gray-600': props.flat,
+        'border-4': !props.flat
       })
     }
   }
@@ -66,21 +65,21 @@ export default {
 
 <style scoped>
 .app-button {
-  &__inner {
-    border-top-color: theme('colors.white');
-    border-left-color: theme('colors.white');
-    border-right-color: theme('colors.gray.600');
-    border-bottom-color: theme('colors.gray.600');
+  /* &__inner { */
+  border-top-color: theme('colors.white');
+  border-left-color: theme('colors.white');
+  border-right-color: theme('colors.gray.600');
+  border-bottom-color: theme('colors.gray.600');
 
-    &:active {
-      border-color: theme('colors.gray.600');
-      border-width: 2px 1px 1px 2px;
-    }
+  /* } */
+  &:active:not(.app-button--flat),
+  &--depressed {
+    border-color: theme('colors.gray.600');
+    border-width: 2px 1px 1px 2px;
+  }
 
-    &--revealed {
-      border-width: 0 1px 1px 0 !important;
-      /* color: orange !important; */
-    }
+  &--flat {
+    /* border-width: 0 1px 1px 0 !important; */
   }
 
 }

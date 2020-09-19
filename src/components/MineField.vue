@@ -2,7 +2,7 @@
   <!-- Smiley Reset Button -->
   <AppButton
     class="block my-5 mx-auto text-center h-12 w-12"
-    @click="resetMineField"
+    @click="resetMinefield"
   >
     <i
       class="reset__icon text-yellow rounded-full"
@@ -11,37 +11,55 @@
   </AppButton>
 
   <div class="text-center">
-    Game Initiated: {{ gameInitiated }}<br>
-    Game Over: {{ gameOver }}<br>
-    Victory: {{ gameVictory }}<br>
+    Game Initiated: {{ game.initialized }}<br>
+    Game Over: {{ game.over }}<br>
+    <!-- Victory: {{ gameVictory }}<br> -->
   </div>
 
   <div class="mine-field">
-    <div class="mine-field__grid flex">
-      <MineFieldSquare
-        v-for="(tile, index) in mineField"
+    <div
+      class="mine-field__grid flex"
+      @mousedown.middle="handleMouseDownMiddleClick"
+      @mouseup.middle="handleMouseUpMiddleClick"
+      @mousemove="handleMouseMove"
+      @mouseleave="handleMouseUpMiddleClick"
+    >
+      <!-- @mouseover.prevent.stop="handleMouseOver"
+      @mouseout.prevent.stop="handleMouseUpMiddleClick" -->
+      <!-- @mouseup.middle="$emit('mouse-up-middle')" -->
+      <MineFieldTile
+        v-for="(tile, index) in game.minefield"
         :key="Math.random(index)"
+        :data-index="index"
         class="mine-field__tile"
         :flag="tile.flag"
         :mine="tile.mine"
-        :game-over="gameOver"
+        :game-over="game.over"
         :victory="gameVictory"
         :exploded="tile.exploded"
+        :depressed="tile.depressed"
         :revealed="tile.revealed"
         :adjacent-mines="tile.adjacentMines"
         @click="handleTileClick(tile, index)"
         @right-click="handleTileRightClick(tile, index)"
-        @middle-click="handleTileMiddleClick(tile, index)"
       />
+      <!-- @middle-click="handleTileMiddleClick(tile, index)" -->
+      <!-- @mouse-down-middle="handleMouseDownMiddleClick(tile, index)" -->
+      <!-- @mouse-up-middle="handleMouseUpMiddleClick(tile, index)"
+        @mouse-out-middle="handleMouseUpMiddleClick(tile, index)" -->
     </div>
   </div>
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { computed, reactive } from 'vue'
 import AppButton from './buttons/AppButton.vue'
-import MineFieldSquare from './MineFieldSquare.vue'
+import MineFieldTile from './MineFieldTile.vue'
 
+/**
+ * Shuffle Array
+ * credit: https://gist.github.com/guilhermepontes/17ae0cc71fa2b13ea8c20c94c5c35dc4
+ */
 function shuffleArray (arr) {
   return arr.map(a => [Math.random(), a])
     .sort((a, b) => a[0] - b[0])
@@ -50,14 +68,15 @@ function shuffleArray (arr) {
 
 export default {
   // Name
-  name: 'MineField',
+  name: 'Minefield',
 
   // Components
   components: {
     AppButton,
-    MineFieldSquare
+    MineFieldTile
   },
 
+  // Props
   props: {
     width: {
       type: Number,
@@ -73,52 +92,91 @@ export default {
     }
   },
 
+  // Setup
   setup (props) {
-    const mineField = ref([])
-    const gameInitiated = ref(false)
-    const gameOver = ref(false)
-    const gameVictory = computed(
-      () => mineField.value.filter((tile) => !tile.revealed).length === props.mines
-    )
-    const revealed = true
-
-    function resetMineField () {
-      gameOver.value = false
-      mineField.value = Array(props.width * props.height)
+    /**
+     * Reactive Game State
+     */
+    const game = reactive({
+      initialized: false,
+      over: false,
+      minefield: Array(props.width * props.height)
         .fill()
-        .map(item => {
-          return {}
-        })
-      gameInitiated.value = false
+        .map(item => { return {} })
+    })
+
+    /**
+     * Game Victory
+     * @type {boolean}
+     * @desc If the number of non-revealed tiles is equal to
+     * the number of mines, the player is victorious
+     */
+    const gameVictory = computed(
+      () => game.minefield.filter(
+        (tile) => !tile.revealed
+      ).length === props.mines
+    )
+
+    /**
+     * Reset Minefield
+     * @desc reset game state, empty field
+     */
+    function resetMinefield () {
+      game.over = false
+      game.initialized = false
+      game.minefield = Array(props.width * props.height)
+        .fill()
+        .map(item => { return {} })
     }
 
-    function generateMineField (safeIndex = 0) {
-      const defaultSquare = {
+    /**
+     * Generate Minefield
+     * @desc creates a randomized minefield based on the props, ensures the safeIndex is mine-free
+     * @param {number} safeIndex
+     */
+    function generateMinefield (safeIndex = 0) {
+      // Define the tiles for our minefield
+      const defaultTile = {
         adjacentMines: 0,
         mine: false,
         flag: false
       }
-      const mineSquare = {
-        adjacentMines: 0,
-        mine: true,
-        flag: false
+
+      const mineTile = {
+        ...defaultTile,
+        mine: true
       }
 
+      // Fill the field with tiles, but subtract one for the 'safe tile'
       let field = Array((props.width * props.height) - 1)
         .fill()
-        .map((item, index) => {
-          return index < props.mines ? { ...mineSquare } : { ...defaultSquare }
-        })
+        .map((item, index) => index < props.mines ? { ...mineTile } : { ...defaultTile })
+
+      // Shuffle the field
       field = shuffleArray(field)
+
+      // Insert the 'safe tile'
       field.splice(safeIndex, 0, {
-        ...defaultSquare
+        ...defaultTile
       })
+
+      // Calculate the # of adjacent mines
       calculateAdjacentMines(field, props.width, props.height)
-      mineField.value = field
-      revealTile(mineField.value[safeIndex], safeIndex)
+
+      // Set the reactive minefield value
+      game.minefield = field
+
+      // Reveal the safe tile
+      revealTile(game.minefield[safeIndex], safeIndex)
     }
 
-    function calculateAdjacentMines (field = [], width = 9, height = 9) {
+    /**
+     * Calculate Adjacent Mines
+     * @desc calculate and set the number of adjacent mines for all tiles in a field
+     * @param {Array} field
+     * @returns {Array}
+     */
+    function calculateAdjacentMines (field = []) {
       field.forEach((tile, index) => {
         if (tile.mine) return
 
@@ -130,7 +188,14 @@ export default {
       return field
     }
 
-    function getAdjacentTiles (index, field = mineField.value) {
+    /**
+     * Get Adjacent Tiles
+     * @desc For any index, returns all of the adjacent tiles
+     * @param {number} index
+     * @param {Array} field
+     * @returns {Array} list of adjacent tiles
+     */
+    function getAdjacentTiles (index, field = game.minefield) {
       const prevRowIndex = index - props.width
       const nextRowIndex = index + props.width
 
@@ -205,18 +270,30 @@ export default {
         })
     }
 
+    /**
+     * Reveal Tile
+     * @desc reveals a tile, if it's a mine, game over!
+     * @param {Object} tile
+     * @param {number} index
+     */
     function revealTile (tile, index) {
-      if (gameOver.value || gameVictory.value) return
+      if (game.over || gameVictory.value) return
       tile.revealed = true
       if (tile.mine) {
-        gameOver.value = true
+        game.over = true
         tile.exploded = true
       } else if (tile.adjacentMines === 0) {
-        revealAdjacentMines(index)
+        revealAdjacentTiles(index)
       }
     }
 
-    function revealAdjacentMines (index, recursiveTiles = []) {
+    /**
+     * Reveal Adjacent Tiles
+     * @desc reveals all tiles around an index, recursively reveals 'empty' tiles
+     * @param {number} index
+     * @param {Array} recursiveTiles
+     */
+    function revealAdjacentTiles (index, recursiveTiles = []) {
       if (recursiveTiles.length) recursiveTiles.shift()
 
       const adjacentHiddenTiles = getAdjacentTiles(index)
@@ -230,29 +307,45 @@ export default {
       })
 
       recursiveTiles.forEach((item) => {
-        revealAdjacentMines(item.index, recursiveTiles)
+        revealAdjacentTiles(item.index, recursiveTiles)
       })
     }
 
+    /**
+     * Handle Tile Click
+     * @desc if the game is not initiated, generate the field.
+     * otherwise reveal the tile if it's not flagged or already revealed
+     * @param {Object} tile
+     * @param {number} index
+     */
     function handleTileClick (tile, index) {
-      if (!gameInitiated.value) {
-        gameInitiated.value = true
-        generateMineField(index)
-        tile.revealed = true
+      if (!game.initialized) {
+        game.initialized = true
+        generateMinefield(index)
+        // tile.revealed = true
       } else {
         if (tile.flag || tile.revealed) return
         revealTile(tile, index)
       }
     }
 
+    /**
+     * Handle Tile Right-Click
+     * @desc adds a flag to the tile when right-clicking
+     * @param {Object} tile
+     */
     function handleTileRightClick (tile) {
-      if (tile.revealed || gameOver.value || gameVictory.value) return
+      if (tile.revealed || game.over || gameVictory.value) return
 
       tile.flag = !tile.flag
     }
 
+    /**
+     * Handle Tile Middle-Click
+     * @desc if the number of flags is equal to the number of adjacent mines, reveal all surrounding mines
+     */
     function handleTileMiddleClick (tile, index) {
-      if (!tile.revealed || gameOver.value || gameVictory.value) return
+      if (!tile.revealed || game.over || gameVictory.value) return
 
       const adjacentTiles = getAdjacentTiles(index)
       const adjacentFlags = adjacentTiles.filter((tile) => tile.flag).length
@@ -261,27 +354,88 @@ export default {
 
       const adjacentUnrevealedTiles = adjacentTiles.filter((tile) => !tile.revealed && !tile.flag)
       adjacentUnrevealedTiles.forEach((tile) => {
+        tile.depressed = false
         revealTile(tile, tile.index)
       })
     }
 
-    resetMineField()
+    // function handleMouseDownMiddleClick (tile, index) {
+    function handleMouseDownMiddleClick (event) {
+      console.log('mouse down middle...', event)
+      const index = +event.target.dataset.index
+
+      if (!index) return
+
+      const tile = game.minefield[index]
+      // console.log(tile)
+
+      if (game.over || gameVictory.value) return
+
+      const adjacentTiles = getAdjacentTiles(index)
+      const adjacentUnrevealedTiles = adjacentTiles.filter((tile) => !tile.revealed && !tile.flag)
+      // console.dir(adjacentTiles)
+      tile.depressed = true
+      adjacentUnrevealedTiles.forEach((tile) => {
+        tile.depressed = true
+        // revealTile(tile, tile.index)
+      })
+    }
+
+    function handleMouseUpMiddleClick () {
+      // console.log('mouse up...')
+      // const adjacentTiles = getAdjacentTiles(index)
+      // const adjacentUnrevealedTiles = adjacentTiles.filter((tile) => !tile.revealed && !tile.flag)
+      game.minefield.forEach((tile) => {
+        tile.depressed = false
+      })
+    }
+    function handleMouseOutMiddleClick (tile, index) {
+      console.log('mouse out middle')
+    }
+
+    function handleMouseOver (event) {
+      if (event.buttons !== 4) return
+
+      const index = +event.target.dataset.index
+      if (!index) return
+
+      handleMouseUpMiddleClick()
+      handleMouseDownMiddleClick(event)
+    }
+
+    function handleMouseMove (event) {
+      if (event.buttons !== 4) return
+
+      const index = +event.target.dataset.index
+      if (!index) return
+      console.log('event', event)
+    }
+
+    // function handleMouseOut () {
+    //   game.minefield.forEach((tile) => {
+    //     tile.depressed = false
+    //   })
+    // }
+
+    resetMinefield()
 
     return {
-      gameInitiated,
-      gameOver,
+      game,
       gameVictory,
-      revealed,
-      mineField,
-      resetMineField,
-      generateMineField,
+      resetMinefield,
+      generateMinefield,
       handleTileClick,
       handleTileRightClick,
       handleTileMiddleClick,
+      handleMouseDownMiddleClick,
+      handleMouseUpMiddleClick,
+      handleMouseOutMiddleClick,
+      handleMouseOver,
+      handleMouseMove,
       resetIconStyles: computed(() => {
         return {
-          'fas fa-smile': !gameOver.value && !gameVictory.value,
-          'fas fa-dizzy': gameOver.value && !gameVictory.value,
+          'fas fa-smile': !game.over && !gameVictory.value,
+          'fas fa-dizzy': game.over && !gameVictory.value,
           'fas fa-grin-stars': gameVictory.value
         }
       })

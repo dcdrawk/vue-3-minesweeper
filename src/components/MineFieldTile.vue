@@ -2,33 +2,39 @@
   <AppButton
     class="mine-field-tile"
     :class="[baseStyles, computedStyles]"
-    :revealed="revealed || (mine && gameOver && !flag)"
+    :flat="revealed || depressed || (mine && gameOver && !flag)"
     :button-styles="{ 'bg-red': exploded }"
     @click="$emit('click')"
     @click.middle="$emit('middle-click')"
+    @mousedown.middle="$emit('mouse-down-middle')"
+    @mouseup.middle="$emit('mouse-up-middle')"
+    @mouseout="handleMouseOut"
+    @mouseover="handleMouseOver"
     @contextmenu.prevent="$emit('right-click')"
   >
-    <i
-      v-if="flag || (victory && mine)"
-      class="fas fa-flag text-xl text-red"
-    />
-    <i
-      v-else-if="mine && revealed || mine && gameOver"
-      class="fas fa-bomb text-xl"
-    />
+    <div class="pointer-events-none">
+      <i
+        v-if="flag || (victory && mine)"
+        class="fas fa-flag text-xl text-red"
+      />
+      <i
+        v-else-if="mine && revealed || mine && gameOver"
+        class="fas fa-bomb text-xl"
+      />
 
-    <div
-      v-else-if="adjacentMines > 0 && revealed"
-      class="text-lg"
-    >
-      {{ adjacentMines }}
+      <div
+        v-else-if="adjacentMines > 0 && revealed"
+        class="text-lg"
+      >
+        {{ adjacentMines }}
+      </div>
     </div>
   </AppButton>
 </template>
 
 <script>
 import AppButton from './buttons/AppButton.vue'
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 
 const baseStyles = [
   'w-10',
@@ -71,12 +77,28 @@ export default {
     exploded: {
       type: Boolean,
       default: false
+    },
+    depressed: {
+      type: Boolean,
+      default: false
     }
   },
 
-  emits: ['click', 'right-click', 'middle-click'],
+  emits: ['click', 'right-click', 'middle-click', 'mouse-down-middle', 'mouse-up-middle', 'mouse-in-middle', 'mouse-out-middle'],
 
-  setup (props) {
+  setup (props, context) {
+    function handleMouseOut (event) {
+      if (event.buttons === 4) { // middle mouse
+        context.emit('mouse-up-middle')
+      }
+      // console.dir(event)
+    }
+    function handleMouseOver (event) {
+      if (event.buttons === 4) { // middle mouse
+        context.emit('mouse-down-middle')
+      }
+      // console.dir(event)
+    }
     return {
       baseStyles,
       computedStyles: ref({
@@ -84,7 +106,9 @@ export default {
         'bg-red': props.exploded,
         revealed: (props.revealed || props.gameOver) && !props.flag,
         flag: props.flag
-      })
+      }),
+      handleMouseOut,
+      handleMouseOver
     }
   }
 }
@@ -92,6 +116,8 @@ export default {
 
 <style scoped>
 .mine-field-tile {
+  user-select: none;
+
   &.adj {
     &-1 {
       color: theme('colors.blue')
